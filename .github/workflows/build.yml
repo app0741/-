@@ -1,0 +1,53 @@
+name: Build Manggu KakaoTalk Theme
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+
+      - name: Extract source
+        run: |
+          mkdir project
+          unzip -q *.zip -d project
+
+      - name: Find Gradle project
+        run: |
+          echo "Searching Gradle project..."
+          find project -name gradlew -type f
+
+      - name: Build APK
+        run: |
+          PROJECT=$(dirname "$(find project -name gradlew -type f | head -1)")
+          cd "$PROJECT"
+          chmod +x gradlew
+
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Find APK
+        run: |
+          find project -name "*.apk" -type f
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Manggu-KakaoTalk-Theme
+          path: project/**/*.apk
